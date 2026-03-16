@@ -19,7 +19,10 @@ export class FilesUploadController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024, message: 'File too large' }),
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024,
+            message: 'File too large',
+          }),
           new FileTypeValidator({ fileType: /png|jpg|jpeg/ }),
         ],
         errorHttpStatusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
@@ -32,13 +35,23 @@ export class FilesUploadController {
 
   @Post('/multiple')
   @UseInterceptors(
-    FilesInterceptor('files', 2, {
-      limits: {
-        fileSize: 1024 * 1024, // 1 MB
-      },
-    }),
+    FilesInterceptor('files', 2)
   )
-  uploadFiles(@UploadedFiles() files: Express.Multer.File[]) {
+  uploadFiles(
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024,
+            message: 'File too large',
+          }),
+          new FileTypeValidator({ fileType: /png|jpg|jpeg/ }),
+        ],
+        errorHttpStatusCode: 400,
+      }),
+    )
+    files: Express.Multer.File[],
+  ) {
     return files.map((file) => file.originalname);
   }
 }
