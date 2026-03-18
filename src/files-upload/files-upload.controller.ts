@@ -1,7 +1,6 @@
 import {
   Controller,
   FileTypeValidator,
-  HttpStatus,
   MaxFileSizeValidator,
   ParseFilePipe,
   Post,
@@ -10,6 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileSignatureValidator } from '../shared/validators/file-signature.validator';
 
 @Controller('files-upload')
 export class FilesUploadController {
@@ -19,13 +19,19 @@ export class FilesUploadController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
+          //1) validate file size
           new MaxFileSizeValidator({
             maxSize: 1024 * 1024,
             message: 'File too large',
           }),
-          new FileTypeValidator({ fileType: /png|jpg|jpeg/ }),
+
+          //2) validate file type (extension)
+          new FileTypeValidator({ fileType: /png|jpg|jpeg|pdf/ }),
+
+          //3) custom validation (validate file signature)
+          new FileSignatureValidator()
         ],
-        errorHttpStatusCode: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+
       }),
     )
     file: Express.Multer.File,
@@ -34,9 +40,7 @@ export class FilesUploadController {
   }
 
   @Post('/multiple')
-  @UseInterceptors(
-    FilesInterceptor('files', 2)
-  )
+  @UseInterceptors(FilesInterceptor('files', 2))
   uploadFiles(
     @UploadedFiles(
       new ParseFilePipe({
